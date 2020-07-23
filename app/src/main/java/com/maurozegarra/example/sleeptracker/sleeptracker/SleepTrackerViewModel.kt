@@ -37,6 +37,17 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
         formatNights(nights, application.resources)
     }
 
+    val navigateToSleepQuality: LiveData<SleepNight>
+        get() = _navigateToSleepQuality
+
+    private val _navigateToSleepQuality = MutableLiveData<SleepNight>()
+
+    // Call this immediately after navigating to [SleepQualityFragment]
+    // It will clear the navigation request, so if the user rotates their phone it won't navigate twice.
+    fun doneNavigating() {
+        _navigateToSleepQuality.value = null
+    }
+
     init {
         initializeTonight()
     }
@@ -106,6 +117,9 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
             oldNight.endTimeMilli = System.currentTimeMillis()
 
             update(oldNight)
+
+            // Set state to navigate to the SleepQualityFragment.
+            _navigateToSleepQuality.value = oldNight
         }
     }
 
