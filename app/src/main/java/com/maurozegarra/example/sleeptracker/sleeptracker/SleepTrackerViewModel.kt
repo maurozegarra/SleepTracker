@@ -14,7 +14,7 @@ import kotlinx.coroutines.*
 //@formatter:off
 class SleepTrackerViewModel(val database: SleepDatabaseDao,
                             application: Application) : AndroidViewModel(application) {
-    //@formatter:off
+    //@formatter:on
     // viewModelJob allows us to cancel all coroutines started by this ViewModel.
     private var viewModelJob = Job()
 
@@ -33,14 +33,38 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
     private val nights = database.getAllNights()
 
     // Converted nights to Spanned for displaying.
-    val nightsString:LiveData<Spanned> = Transformations.map(nights) { nights ->
+    val nightsString: LiveData<Spanned> = Transformations.map(nights) { nights ->
         formatNights(nights, application.resources)
     }
+
+    // If tonight has not been set, then the START button should be visible.
+    val startButtonVisible = Transformations.map(tonight) {
+        it == null
+    }
+
+    // If tonight has been set, then the STOP button should be visible.
+    val stopButtonVisible = Transformations.map(tonight) {
+        it != null
+    }
+
+    // If there are any nights in the database, show the CLEAR button.
+    val clearButtonVisible = Transformations.map(nights) {
+        it?.isNotEmpty()
+    }
+
+    val showSnackBarEvent: LiveData<Boolean>
+        get() = _showSnackbarEvent
+
+    private var _showSnackbarEvent = MutableLiveData<Boolean>()
 
     val navigateToSleepQuality: LiveData<SleepNight>
         get() = _navigateToSleepQuality
 
     private val _navigateToSleepQuality = MutableLiveData<SleepNight>()
+
+    fun doneShowingSnackbar() {
+        _showSnackbarEvent.value = false
+    }
 
     // Call this immediately after navigating to [SleepQualityFragment]
     // It will clear the navigation request, so if the user rotates their phone it won't navigate twice.
@@ -132,6 +156,8 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
 
             // And clear tonight since it's no longer in the database
             tonight.value = null
+
+            _showSnackbarEvent.value = true
         }
     }
 
